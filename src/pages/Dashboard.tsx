@@ -377,7 +377,9 @@ Remember: These recommendations are AI-generated based on your current results. 
                 <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl p-6 border border-purple-500/30">
                   <div className="flex items-center space-x-4 mb-4">
                     <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-xl">
-                      <getCurrentStage().icon className="h-6 w-6 text-white animate-pulse" />
+                      {React.createElement(getCurrentStage().icon, {
+                        className: "h-6 w-6 text-white animate-pulse"
+                      })}
                     </div>
                     <div>
                       <h3 className="text-white font-semibold">AI Processing in Progress</h3>
