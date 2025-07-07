@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, FileText, AlertCircle, CheckCircle, Brain, Scan } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface FileUploadProps {
@@ -39,23 +39,24 @@ const FileUpload: React.FC<FileUploadProps> = ({
   })
 
   const getBorderColor = () => {
-    if (error || isDragReject) return 'border-red-300 dark:border-red-600'
-    if (isDragActive) return 'border-blue-400 dark:border-blue-500'
-    if (isUploading) return 'border-green-300 dark:border-green-600'
-    return 'border-gray-300 dark:border-gray-600'
+    if (error || isDragReject) return 'border-red-400/50'
+    if (isDragActive) return 'border-cyan-400/50'
+    if (isUploading) return 'border-green-400/50'
+    return 'border-cyan-500/30'
   }
 
   const getBackgroundColor = () => {
-    if (error || isDragReject) return 'bg-red-50 dark:bg-red-900/10'
-    if (isDragActive) return 'bg-blue-50 dark:bg-blue-900/10'
-    if (isUploading) return 'bg-green-50 dark:bg-green-900/10'
-    return 'bg-gray-50 dark:bg-gray-800'
+    if (error || isDragReject) return 'bg-red-500/5'
+    if (isDragActive) return 'bg-cyan-500/10'
+    if (isUploading) return 'bg-green-500/5'
+    return 'bg-slate-700/30'
   }
 
   const getIcon = () => {
-    if (error) return <AlertCircle className="h-12 w-12 text-red-500" />
-    if (isUploading) return <CheckCircle className="h-12 w-12 text-green-500" />
-    return <Upload className="h-12 w-12 text-gray-400 dark:text-gray-500" />
+    if (error) return <AlertCircle className="h-16 w-16 text-red-400" />
+    if (isUploading) return <CheckCircle className="h-16 w-16 text-green-400" />
+    if (isDragActive) return <Scan className="h-16 w-16 text-cyan-400" />
+    return <Upload className="h-16 w-16 text-slate-400" />
   }
 
   return (
@@ -63,43 +64,89 @@ const FileUpload: React.FC<FileUploadProps> = ({
       <motion.div
         {...getRootProps()}
         className={`
-          relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 cursor-pointer
+          relative border-2 border-dashed rounded-2xl p-12 transition-all duration-300 cursor-pointer backdrop-blur-sm
           ${getBorderColor()} ${getBackgroundColor()}
-          ${isUploading ? 'cursor-not-allowed' : 'hover:border-blue-400 dark:hover:border-blue-500'}
+          ${isUploading ? 'cursor-not-allowed' : 'hover:border-cyan-400/70 hover:bg-cyan-500/5'}
         `}
         whileHover={!isUploading ? { scale: 1.02 } : {}}
         whileTap={!isUploading ? { scale: 0.98 } : {}}
       >
         <input {...getInputProps()} />
         
-        <div className="flex flex-col items-center justify-center space-y-4">
-          {getIcon()}
+        <div className="flex flex-col items-center justify-center space-y-6">
+          <motion.div
+            animate={isDragActive ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {getIcon()}
+          </motion.div>
           
-          <div className="text-center">
-            <p className="text-lg font-medium text-gray-900 dark:text-white">
-              {isUploading ? 'Uploading...' : isDragActive ? 'Drop your file here' : 'Drop your medical report here'}
+          <div className="text-center space-y-3">
+            <h3 className="text-2xl font-bold text-white">
+              {isUploading ? 'Uploading...' : isDragActive ? 'Drop your file here' : 'Upload Medical Report'}
+            </h3>
+            <p className="text-slate-300 text-lg">
+              {isUploading ? `${uploadProgress}% complete` : isDragActive ? 'Release to upload' : 'Drag & drop or click to browse'}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {isUploading ? `${uploadProgress}% complete` : 'or click to browse'}
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-            <FileText className="h-4 w-4" />
-            <span>Supported formats: PDF, JPG, PNG (Max 10MB)</span>
+            
+            {!isUploading && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center space-x-2 text-slate-400">
+                  <FileText className="h-5 w-5" />
+                  <span>Supported: PDF, JPG, PNG (Max 10MB)</span>
+                </div>
+                
+                <div className="flex items-center justify-center space-x-4 text-sm text-slate-500">
+                  <div className="flex items-center space-x-1">
+                    <Brain className="h-4 w-4" />
+                    <span>AI-Powered</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Scan className="h-4 w-4" />
+                    <span>OCR Ready</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {isUploading && (
-          <div className="absolute bottom-2 left-2 right-2">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
               <motion.div
-                className="bg-blue-600 h-2 rounded-full"
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 h-3 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${uploadProgress}%` }}
                 transition={{ duration: 0.5 }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Floating particles effect */}
+        {isDragActive && (
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 bg-cyan-400 rounded-full"
+                initial={{ 
+                  x: Math.random() * 100 + '%',
+                  y: Math.random() * 100 + '%',
+                  opacity: 0 
+                }}
+                animate={{ 
+                  y: '-100%',
+                  opacity: [0, 1, 0]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: i * 0.2
+                }}
+              />
+            ))}
           </div>
         )}
       </motion.div>
@@ -108,9 +155,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-3 flex items-center space-x-2 text-sm text-red-600 dark:text-red-400"
+          className="mt-4 flex items-center space-x-3 text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl p-4"
         >
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="h-5 w-5" />
           <span>{error}</span>
         </motion.div>
       )}
