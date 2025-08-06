@@ -1,4 +1,7 @@
 # MedReport AI - AI-Powered Medical Report Analyzer
+Live link : https://med-report-ai.vercel.app/
+
+(this project is under development)
 
 A modern, AI-powered medical report analyzer that provides disease prediction and smart recommendations. Built with React, TypeScript, and Supabase.
 
