@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Frontend Application
+  medreport-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - medreport-network
+
+  # Development version (optional)
+  medreport-ai-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
+    profiles:
+      - dev
+    networks:
+      - medreport-network
+
+  # Nginx reverse proxy (optional)
+  nginx-proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - medreport-ai
+    profiles:
+      - production
+    networks:
+      - medreport-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    profiles:
+      - production
+    networks:
+      - medreport-network
+
+  # PostgreSQL for local development (optional)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: medreport
+      POSTGRES_USER: medreport
+      POSTGRES_PASSWORD: medreport123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    profiles:
+      - dev
+    networks:
+      - medreport-network
+
+volumes:
+  redis-data:
+  postgres-data:
+
+networks:
+  medreport-network:
+    driver: bridge 

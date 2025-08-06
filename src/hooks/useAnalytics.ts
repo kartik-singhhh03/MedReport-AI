@@ -1,51 +1,127 @@
-import { useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../contexts/AuthContext'
+import { useEffect, useCallback } from 'react'
+import { useAuth } from './useAuth'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface AnalyticsEvent {
-  event_type: string
-  event_data?: Record<string, any>
-  user_id?: string
+  event: string
+  properties?: Record<string, any>
+  timestamp?: number
 }
 
-export function useAnalytics() {
-  const { user } = useAuth()
+class Analytics {
+  private events: AnalyticsEvent[] = []
+  private isEnabled: boolean = false
 
-  const trackEvent = async (eventType: string, eventData?: Record<string, any>) => {
-    try {
-      const event: AnalyticsEvent = {
-        event_type: eventType,
-        event_data: eventData || {},
-        user_id: user?.id
-      }
+  constructor() {
+    this.isEnabled = import.meta.env.VITE_ENABLE_ANALYTICS === 'true'
+  }
 
-      await supabase.from('analytics').insert(event)
-    } catch (error) {
-      console.error('Analytics tracking error:', error)
+  track(event: string, properties?: Record<string, any>) {
+    if (!this.isEnabled) return
+
+    const analyticsEvent: AnalyticsEvent = {
+      event,
+      properties,
+      timestamp: Date.now()
+    }
+
+    this.events.push(analyticsEvent)
+
+    // Send to analytics service (mock implementation)
+    this.sendToAnalytics(analyticsEvent)
+  }
+
+  private sendToAnalytics(event: AnalyticsEvent) {
+    // In production, send to your analytics service
+    console.log('Analytics Event:', event)
+    
+    // Example: Send to Google Analytics, Mixpanel, etc.
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', event.event, event.properties)
     }
   }
 
-  const trackPageView = (page: string) => {
-    trackEvent('page_view', { page, timestamp: new Date().toISOString() })
+  trackPageView(page: string) {
+    this.track('page_view', { page })
   }
 
-  const trackFileUpload = (fileType: string, fileSize: number) => {
-    trackEvent('file_upload', { file_type: fileType, file_size: fileSize })
+  trackFileUpload(fileType: string, fileSize: number) {
+    this.track('file_upload', { fileType, fileSize })
   }
 
-  const trackAnalysisComplete = (reportId: string, processingTime: number) => {
-    trackEvent('analysis_complete', { report_id: reportId, processing_time: processingTime })
+  trackAnalysisStart(reportId: string) {
+    this.track('analysis_start', { reportId })
   }
 
-  const trackError = (error: string, context?: string) => {
-    trackEvent('error', { error_message: error, context })
+  trackAnalysisComplete(reportId: string, duration: number) {
+    this.track('analysis_complete', { reportId, duration })
   }
+
+  trackError(error: string, context?: string) {
+    this.track('error', { error, context })
+  }
+
+  trackFeatureUsage(feature: string) {
+    this.track('feature_usage', { feature })
+  }
+
+  getEvents() {
+    return this.events
+  }
+
+  clearEvents() {
+    this.events = []
+  }
+}
+
+const analytics = new Analytics()
+
+export function useAnalytics() {
+  const { user } = useAuth()
+  const { language } = useLanguage()
+
+  const track = useCallback((event: string, properties?: Record<string, any>) => {
+    analytics.track(event, {
+      ...properties,
+      userId: user?.id,
+      language,
+      timestamp: Date.now()
+    })
+  }, [user?.id, language])
+
+  const trackPageView = useCallback((page: string) => {
+    analytics.trackPageView(page)
+  }, [])
+
+  const trackFileUpload = useCallback((fileType: string, fileSize: number) => {
+    analytics.trackFileUpload(fileType, fileSize)
+  }, [])
+
+  const trackAnalysisStart = useCallback((reportId: string) => {
+    analytics.trackAnalysisStart(reportId)
+  }, [])
+
+  const trackAnalysisComplete = useCallback((reportId: string, duration: number) => {
+    analytics.trackAnalysisComplete(reportId, duration)
+  }, [])
+
+  const trackError = useCallback((error: string, context?: string) => {
+    analytics.trackError(error, context)
+  }, [])
+
+  const trackFeatureUsage = useCallback((feature: string) => {
+    analytics.trackFeatureUsage(feature)
+  }, [])
 
   return {
-    trackEvent,
+    track,
     trackPageView,
     trackFileUpload,
+    trackAnalysisStart,
     trackAnalysisComplete,
-    trackError
+    trackError,
+    trackFeatureUsage,
+    getEvents: analytics.getEvents.bind(analytics),
+    clearEvents: analytics.clearEvents.bind(analytics)
   }
 }
